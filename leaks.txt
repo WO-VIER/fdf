@@ -1,0 +1,9 @@
+
+=================================================================
+==2657322==ERROR: LeakSanitizer: detected memory leaks
+
+Direct leak of 136 byte(s) in 1 object(s) allocated from:
+    #0 0x78f33e4fd1aa in calloc /usr/src/debug/gcc/gcc/libsanitizer/asan/asan_malloc_linux.cpp:77
+    #1 0x78f33ebc9b14 in XShmCreateImage (/usr/lib/libXext.so.6+0x4b14) (BuildId: 6831a77ee8af0e641a9d63702d7b360b9982b811)
+
+SUMMARY: AddressSanitizer: 136 byte(s) leaked in 1 allocation(s).
