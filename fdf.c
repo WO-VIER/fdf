@@ -6,7 +6,7 @@
 /*   By: vwautier <vwautier@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/10 13:44:35 by vwautier          #+#    #+#             */
-/*   Updated: 2025/02/07 16:16:42 by vwautier         ###   ########.fr       */
+/*   Updated: 2025/04/01 20:38:20 by vwautier         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -103,89 +103,30 @@
 ** 7. fix leaks
 **         - type leaks a.out or leaks fdf in your shell
 */
-/*
-int hauter(char *file)
+
+
+int main(int argc, char **argv)
 {
-    int		fd;
-    char	*line;
-    int		i;
-
-    fd = open(file, O_RDONLY);
-	i = 0;
-
-
-	while(1)
-	{
-		line = get_next_line(fd);
-		if (line)
-		{
-			free(line);
-			i++;
-		}
-		else
-			break;
-	}
-
-	return (i);
-}
-
-int largeur(char *file)
-{
-    int		fd;
-    char	*line;
-    int		i;
-	int		largeur;
-    int     first;
-
-    fd = open(file, O_RDONLY);
-	i = 0;
-	largeur = 0;
-	line = get_next_line(fd);
-    if(line)
-	{
-		while (line[i])
-		{
-			if(line[i] != ' ' && line[i] != '\n')
-				largeur++;
-			i++;	
-		}
-		free(line);
-	}
-    return (largeur);
-}
-*/
-void test_fdf(fdf *fdf)
-{	//fdf = malloc(sizeof(fdf));
-
-    fdf->mlx_ptr = mlx_init();
-    fdf->winmlx_ptr = mlx_new_window(fdf->mlx_ptr,900,600,"FDF");
-    /*
-    int i = 0;
-    int j = 0;
-    while (i < 900)
-    {
-        while(j < 600)
-        {
-            mlx_pixel_put(fdf->mlx_ptr,fdf->winmlx_ptr,i,j++,0xFFFFFF);
-            j++;
-        }
-        j = 0;
-        i++;
-    }*/
-   bresenham(0,0,900,600,fdf);
-    mlx_loop(fdf->mlx_ptr);
-}
-
-	
-
-int main()
-{
-    int i = 0 ;
     fdf *fdf;
 
     fdf = malloc(sizeof(*fdf));
-    setup_fdf(fdf, "test_maps/42.fdf");
-
+    
+    if(argc == 2)
+    {
+        if(setup_fdf(fdf, argv[1]))
+        {
+            //clear_game(fdf);
+            free(fdf);
+            exit(1);
+        }
+    }
+    else
+    {
+        write(2,"Error: number of arguments\n",28);
+        write(2,"Usage : ./fdf <filename>\n",25);
+        free(fdf);
+        return (1);
+    }
    /*
     if (!fdf)
     {
@@ -207,34 +148,29 @@ int main()
     free(fdf);
     */ 
    // 450 - ( 47 )
-    fdf->win_x = 900;
-    fdf->win_y = 600;
-    fdf->zoom = 20;
-    fdf->angle = 0.523599;
-	//fdf->z = 0;
-	//fdf->offsx = (fdf->win_x / 2) * fdf->zoom; 
-	//fdf->offsy = (fdf->win_y / 2) * fdf->zoom;
-	//printf("Win x : %d Win y : %d \n", fdf->win_x /2, fdf->win_y/2);
-    fdf->offsx = ((fdf->win_x / 2) - ((fdf -> largeur * fdf->zoom) / 2));
-    fdf->offsy =  ((fdf->win_y / 2) - ((fdf -> hauter * fdf->zoom) / 2));
-   	printf("OFFx : %d OFFy y : %d \n", fdf->offsx, fdf->offsy);
+
+   	//printf("OFFx : %d OFFy y : %d \n", fdf->offsx, fdf->offsy);
+    /*
 	fdf->mlx_ptr = mlx_init();
     fdf->winmlx_ptr = mlx_new_window(fdf->mlx_ptr,fdf->win_x,fdf->win_y,"FDF");
     fdf->mlx_image = mlx_new_image(fdf->mlx_ptr, fdf->win_x, fdf->win_y);
-	//fdf->bits_per_pixel = 32;
 	fdf->ptr_image = mlx_get_data_addr(fdf->mlx_image,&fdf->bits_per_pixel,&fdf->line_length,&fdf->endian);
-	//printf("Bit per pixel :%d", fdf->bits_per_pixel);
-	// 900 largeur 19 600 hauter 11
+    */
 
-    //test_fdf(fdf);
-    //affichage(fdf);
+    
     mlx_key_hook(fdf->winmlx_ptr,key_handler,fdf);
 	mlx_hook(fdf->winmlx_ptr, 17, 0,clear_game,fdf);
 	mlx_hook(fdf->winmlx_ptr, 17, 0,clear_game,fdf);
+    
+    /*
+    mlx_hook(fdf->winmlx_ptr, 2, 1L<<0, key_handler, fdf);    // Touche pressée
+    mlx_hook(fdf->winmlx_ptr, 3, 1L<<1, key_release, fdf);  // Touche relâchée  
+    mlx_hook(fdf->winmlx_ptr, 17, 0, clear_game, fdf);      // Fermeture fenêtre
+    */
+    //mlx_loop_hook(fdf->mlx_ptr, loop_handler, fdf);  
 	//mlx_hook(fdf->winmlx_ptr, 12, 0,affichage,fdf);
     //mlx_clear_window(fdf->mlx_ptr,fdf->winmlx_ptr);
-    //affichage(fdf);
+    affichage(fdf);
     mlx_loop(fdf->mlx_ptr);
-    
     return 0;
 }

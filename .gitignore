@@ -1,0 +1,17 @@
+
+
+fdf
+a.out
+*.txt
+*.o
+*.a
+*.so
+
+*.swp
+*~
+.DS_Store
+.vscode/
+
+*.log
+traces.txt
+truc

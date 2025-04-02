@@ -6,63 +6,11 @@
 /*   By: vwautier <vwautier@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/01 16:56:38 by vwautier          #+#    #+#             */
-/*   Updated: 2025/02/07 21:53:24 by vwautier         ###   ########.fr       */
+/*   Updated: 2025/04/02 00:25:07 by vwautier         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <math.h>
-#include <time.h>
 #include "fdf.h"
-#define ISO_ANGLE 0.785398 // 45 degrés
-#define ISO_COS 0.707107  // cos(45°)
-#define ISO_SIN 0.707107  // sin(45°)
-
-void fdf_color(fdf *fdf, int z, int z1)
-{
-    if (z || z1)
-    	fdf->couleur = 0xe80c0c;
-	else
-    fdf->couleur = 0xFFFFFF;
-}
-
-void isometric_projection(fdf *fdf,float *x, float *x1, float *y, float *y1, int z, int z1)
-{
-	int tmp;
-	
-	tmp = *x;
-    *x = (*x - *y) * cos(fdf->angle );//0.8
-    *y = (tmp + *y) * sin(fdf->angle) - z;
-	tmp = *x1;
-	*x1 = (*x1 - *y1) * cos(fdf->angle);//0.8
-    *y1 = (tmp + *y1) * sin(fdf->angle) - z1;
-
-	*x = *x + fdf->offsx;
-    *x1 = *x1 + fdf->offsx;
-    *y = *y + fdf->offsy;
-    *y1 = *y1 + fdf->offsy;
-}
-void rotate(fdf *fdf,float *x, float *x1, float *y, float *y1, int z, int z1)
-{ 
-
-    *x = (*x - *y) * 0.5;//0.8
-    *y = (*x + *y) * 0.5 - z;
-    *x1 = (*x1 - *y1) * 0.5;//0.8
-    *y1 = (*x1 + *y1) * 0.5 - z1;
-
-	
-	*x = *x + fdf->offsx ;
-    *x1 = *x1 + fdf->offsx;
-    *y = *y + fdf->offsy;
-    *y1 = *y1 + fdf->offsy;
-}
-
-void no_projection(fdf *fdf, float *x, float *x1, float *y, float *y1)
-{
-    *x = *x + fdf->offsx ;
-    *x1 = *x1 + fdf->offsx;
-    *y = *y + fdf->offsy;
-    *y1 = *y1 + fdf->offsy;
-}
 
 void bit_rotate(fdf *fdf, float *x, float *x1, float *y, float *y1, int z, int z1)
 {
@@ -70,19 +18,147 @@ void bit_rotate(fdf *fdf, float *x, float *x1, float *y, float *y1, int z, int z
     /*printf("x = %f, y = %f, x1 = %f, y1 = %f\n", *x, *y, *x1, *y1);
     printf("offsx = %d, offsy = %d\n", fdf->offsx, fdf->offsy);
     */
+    //int oldx;
+
+    //oldx = (int)*x;
     *x = (float)(((int)(*x + fdf->offsx) - (int)(*y + fdf->offsy)) >> 1);
     //printf("x = %f, y = %f\n", *x, *y);
     *y = (float)(((int)(*x + fdf->offsx) + (int)(*y + fdf->offsy)) >> 1) - z;
     //oldx = *x1;
     //oldy = *y1;
+    //oldx = (int)*x1;
     *x1 = (float)(((int)(*x1 + fdf->offsx) - (int)(*y1+ fdf->offsy)) >> 1);
-    *y1 = (float)(((int)(*x1+ fdf->offsx) + (int)(*y1 + fdf->offsy)) >> 1) - z1;
+    *y1 = (float)(((int)(*x+ fdf->offsx) + (int)(*y1 + fdf->offsy)) >> 1) - z1;
     /*printf("x = %f, y = %f, x1 = %f, y1 = %f\n", *x, *y, *x1, *y1);
     exit(1);*/
 	*x = *x + fdf->offsx ;
     *x1 = *x1 + fdf->offsx;
     *y = *y + fdf->offsy;
     *y1 = *y1 + fdf->offsy;
+}
+
+
+
+void fdf_color(fdf *fdf, int z, int z1)
+{
+    int height = (z > z1) ? z : z1;
+    
+    // Protection contre la division par zéro
+    if (fdf->max_z == fdf->min_z) {
+        fdf->couleur = 0xffffff;  // Blanc si carte plate
+        return;
+    }
+    
+    // Calcul du ratio (0.0 pour min_z, 1.0 pour max_z)
+    float ratio = (float)(height - fdf->min_z) / (fdf->max_z - fdf->min_z);
+    
+    // Composantes RGB
+    int r = 255;                          // Reste à 255
+    int g = 255 - (int)(ratio * 110);     // Varie de 255 à 145
+    int b = 255;                          // Reste à 255
+    
+    // Création de la couleur finale
+    fdf->couleur = (r << 16) | (g << 8) | b;
+}
+
+static void rotate_point(fdf *fdf, float *x, float *y, float *z)
+{
+    float old_x = *x;
+    float old_y = *y;
+    float old_z = *z;
+    float temp_x, temp_y, temp_z;
+    double angle;
+
+
+    // Rotation X
+    temp_y = old_y;
+    temp_z = old_z;
+    old_y = temp_y * cos(fdf->x_angle) - temp_z * sin(fdf->x_angle);
+    old_z = temp_y * sin(fdf->x_angle) + temp_z * cos(fdf->x_angle);
+    
+    // Rotation Y
+    temp_x = old_x;
+    temp_z = old_z;
+    old_x = temp_x * cos(fdf->y_angle) + temp_z * sin(fdf->y_angle);
+    old_z = -temp_x * sin(fdf->y_angle) + temp_z * cos(fdf->y_angle);
+    
+    // Rotation Z
+    temp_x = old_x;
+    temp_y = old_y;
+    *x = temp_x * cos(fdf->z_angle) - temp_y * sin(fdf->z_angle);
+    *y = temp_x * sin(fdf->z_angle) + temp_y * cos(fdf->z_angle);
+    
+    *z = old_z; // Sauvegarde la nouvelle valeur Z pour l'effet de hauteur
+}
+
+void isometric_projection2(fdf *fdf,float *x, float *x1, float *y, float *y1, int z, int z1)
+{
+    float z_float = z * fdf->z_scale;
+    float z1_float = z1 * fdf->z_scale;
+    
+    // 1. Calcul du centre du modèle
+    float center_x = fdf->largeur / 2.0f * fdf->zoom;
+    float center_y = fdf->hauter / 2.0f * fdf->zoom;
+    
+    // 2. Translation pour que le centre soit à (0,0)
+    *x = *x * fdf->zoom - center_x;
+    *y = *y * fdf->zoom - center_y;
+    *x1 = *x1 * fdf->zoom - center_x;
+    *y1 = *y1 * fdf->zoom - center_y;
+
+   
+    
+    int tmp;
+	tmp = *x;
+    *x = (*x - *y) * cos(fdf->z_angle);//0.8
+    *y = (tmp + *y) * sin(fdf->z_angle) - (z * fdf->z_scale);
+	tmp = *x1;
+	*x1 = (*x1 - *y1) * cos(fdf->z_angle);//0.8
+    *y1 = (tmp + *y1) * sin(fdf->z_angle) - (z1 * fdf->z_scale);
+    
+    *x = *x + fdf->offsx;
+    *x1 = *x1 + fdf->offsx;
+    *y = *y + fdf->offsy ;
+    *y1 = *y1 + fdf->offsy;
+}
+
+void isometric_projection(fdf *fdf, float *x, float *x1, float *y, float *y1, int z, int z1)
+{
+    float z_float = z * fdf->z_scale;
+    float z1_float = z1 * fdf->z_scale;
+    
+    // 1. Calcul du centre du modèle
+    float center_x = ((fdf->largeur / 2.0f) * fdf->zoom) * cos(M_PI / 6);
+    float center_y = ((fdf->hauter / 2.0f) * fdf->zoom) * sin(M_PI / 6);
+    //printf("center_x = %f, center_y = %f\n", center_x, center_y);
+    
+    // 2. Translation pour que le centre soit à (0,0)
+    
+    *x = *x * fdf->zoom - center_x;
+    *y = *y * fdf->zoom - center_y;
+    *x1 = *x1 * fdf->zoom - center_x;
+    *y1 = *y1 * fdf->zoom - center_y;
+    
+    
+    // 3. Application des rotations (autour de 0,0)
+    float tmp_x = *x, tmp_y = *y, tmp_x1 = *x1, tmp_y1 = *y1;
+    rotate_point(fdf, &tmp_x, &tmp_y, &z_float);
+    rotate_point(fdf, &tmp_x1, &tmp_y1, &z1_float);
+    *x = tmp_x;
+    *y = tmp_y;
+    *x1 = tmp_x1;
+    *y1 = tmp_y1;
+    
+    // 4. Application des hauteurs
+    *y = *y - z_float;
+    *y1 = *y1 - z1_float;
+    
+    // 5. Ajout des décalages
+    *x = *x + center_x + fdf->offsx;
+    *y = *y + center_y + fdf->offsy;
+    *x1 = *x1 + center_x + fdf->offsx;
+    *y1 = *y1 + center_y + fdf->offsy;
+    printf("x = %f, y = %f, x1 = %f, y1 = %f\n", *x, *y, *x1, *y1);
 }
 
 void	mlx_pixel_put_img(fdf *fdf, int x, int y, int color)
@@ -98,7 +174,6 @@ void	mlx_pixel_put_img(fdf *fdf, int x, int y, int color)
 
 void bresenham(float x, float y, float x1, float y1, fdf *fdf)
 {
-    
     float dx;
     float dy;
     int max;
@@ -108,69 +183,59 @@ void bresenham(float x, float y, float x1, float y1, fdf *fdf)
     z = fdf->map[(int)y][(int)x];
     z1 = fdf->map[(int)y1][(int)x1];
 
-    //zoom
-    
-    x = x * fdf->zoom;
-    x1 = x1 * fdf->zoom;
-    y = y * fdf->zoom;
-    y1 = y1 * fdf->zoom;
-    
     //couleur
     fdf_color(fdf, z, z1);
 
-	/*
-    x = x + fdf->offsx;
-    x1 = x1 + fdf->offsx;
-    y = y + fdf->offsy;
-    y1 = y1 + fdf->offsy;
-	*/
-    // Projection isometrique
-	/*   
-    x = x + fdf->offsx ;
-    x1 = x1 + fdf->offsx;
-    y = y + fdf->offsy;
-    y1 = y1 + fdf->offsy;
-  	*/  
-    //isometric_projection(&x,&y,z);
-    isometric_projection(fdf,&x,&x1,&y,&y1,z,z1);
-    //bit_rotate(fdf,&x,&x1,&y,&y1,z,z1);
-    //rotate(fdf,&x,&x1,&y,&y1,z,z1);
-    //no_projection(fdf, &x,&x1,&y,&y1);
-    //printf("x = %f, x1 = %f, y = %f, y1 = %f\n", x, x1, y, y1);
-    //pente delta x et delta y
-
+    // Projection isométrique
+    isometric_projection2(fdf,&x,&x1,&y,&y1,z,z1);
     
     dx = x1 - x;
     dy = y1 - y;
-    //printf("dx = %f, dy = %f\n", dx, dy);
     max = (fabs(dx) > fabs(dy)) ? fabs(dx) : fabs(dy);
 
-    dx = dx / max; // si dx plus grand ligne horizontale
-    dy = dy / max;  // si dy plus grand ligne verticale
+    dx = dx / max;
+    dy = dy / max;
     while((int)(x - x1) || (int)(y - y1))
     {
-		//prit l'evoution de x et de x1 ainsi que de y et y1
-        //printf("x = %f, x1 = %f, y = %f, y1 = %f\n", x, x1, y, y1);
         if(x <= fdf->win_x || y <= fdf->win_y)
 			mlx_pixel_put_img(fdf, x, y, fdf->couleur);
-		//mlx_pixel_put(fdf->mlx_ptr, fdf->winmlx_ptr, x, y, fdf->couleur);
 		x = x + dx;
 		y = y + dy;
+    }
+}
 
+void draw_center_cross(fdf *fdf)
+{
+    int center_x = fdf->win_x / 2;
+    int center_y = fdf->win_y / 2;
+    int size = 10;            // Taille de chaque branche de la croix
+    int color = 0xFF0000;     // Rouge pour la croix
+    int i;
+    
+    // Ligne horizontale
+    i = center_x - size;
+    while (i <= center_x + size)
+    {
+        mlx_pixel_put_img(fdf, i, center_y, color);
+        i++;
     }
     
+    // Ligne verticale
+    i = center_y - size;
+    while (i <= center_y + size)
+    {
+        mlx_pixel_put_img(fdf, center_x, i, color);
+        i++;
+    }
 }
+
+
+
 
 int affichage(fdf *fdf)
 {
 	int x;
 	int y;
-
-    clock_t start, end;
-    double cpu_time_used;
-    
-    start = clock();
-    
 	y = 0;
     
 	while(y < fdf->hauter)
@@ -186,11 +251,8 @@ int affichage(fdf *fdf)
 		}
 		y++;
     }
-
+    draw_center_cross(fdf);
 	mlx_put_image_to_window(fdf->mlx_ptr, fdf->winmlx_ptr, fdf->mlx_image, 0,0);
 
-       end = clock();
-    cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
-    printf("Temps d'exécution: %f millisecondes\n", cpu_time_used);
     return (0);
 }
