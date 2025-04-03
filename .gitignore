@@ -15,3 +15,5 @@ a.out
 *.log
 traces.txt
 truc
+
+run_fdf_tests.sh

@@ -6,7 +6,7 @@
 /*   By: vwautier <vwautier@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/23 16:58:59 by vwautier          #+#    #+#             */
-/*   Updated: 2025/04/02 13:11:56 by vwautier         ###   ########.fr       */
+/*   Updated: 2025/04/03 23:47:58 by vwautier         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,6 +112,12 @@ int hauter(fdf *fdf, char *file)
 			break;
 	}
 	fdf->hauter = i;
+	if(fdf->hauter == 0)
+	{
+		close(fd);
+		write(2,"Error: number parsing\n",22);
+		return (-1);
+	}
 	close(fd);
 	return (i);
 }
@@ -140,6 +146,8 @@ int largeur(fdf *fdf,char *file)
 		}
 	}
 	close(fd);
+	if(fdf->largeur == -1)
+		write(2,"Error: parsing\n",15);
 	return (fdf->largeur);
 }
 
@@ -204,55 +212,6 @@ int populate_map(fdf *fdf, char *file, int fd)
 	return (0);
 }
 
-
-/*
-int setup_map(fdf *fdf, char *file)
-{
-    int fd;
-    char *line;
-    char **split;
-    int i;
-    int j;
-
-    fdf->map = (int **)malloc(sizeof(int *) * (fdf->hauter + 1));
-	if(!fdf->map)
-		return (1);
-	fdf->map[fdf->hauter] = NULL;
-
-    fd = open(file, O_RDONLY);
-	if(fd == -1)
-		return (1);
-
-    i = 0;
-	line = get_next_line(fd);
-    while (line)
-    {
-		split = ft_split(line, ' ');
-		fdf->map[i] = malloc(sizeof(int) * fdf->largeur);
-		if (!fdf->map[i])
-		{
-			free(line);
-			close(fd);
-
-		}
-			
-		
-		j = 0;
-		while(split[j] && split[j][0] != '\n' && j < fdf->largeur)
-		{
-			fdf->map[i][j] = ft_atoi(split[j]);
-			j++;
-		}
-		free_split(split,line);
-		//free(line);
-		i++;
-		line = get_next_line(fd);
-    }
-    close(fd);
-	print_tab(fdf);
-	return (0);
-}
-*/
 void print_tab(fdf *fdf)
 {
 	int i;
@@ -293,28 +252,24 @@ int clear_game(fdf *fdf)
 	
 	if (!fdf)
 		return (1);
-	clear_board(fdf);
-	/*
-	i = 0;
-	while(fdf->map && i < fdf->hauter)
-	{
-		free(fdf->map[i]);
-		fdf->map[i++] = NULL;
-	}
-	free(fdf->map);
-	fdf->map = NULL;
-	*/
-	//if(fdf->mlx_image)
+	if(fdf->map)
+		clear_board(fdf);
 	if(fdf->mlx_image)
+	{
 		mlx_destroy_image(fdf->mlx_ptr, fdf->mlx_image);
-	//mlx_destroy_image(fdf->mlx_ptr, fdf->mlx_image);
-	fdf->mlx_image = NULL;
-	mlx_destroy_window(fdf->mlx_ptr, fdf->winmlx_ptr);
-	fdf->winmlx_ptr = NULL;
-
-	mlx_destroy_display(fdf->mlx_ptr);
-	free(fdf->mlx_ptr);
-	fdf->mlx_ptr = NULL;
+		fdf->mlx_image = NULL;
+	}
+	if(fdf->winmlx_ptr)
+	{
+		mlx_destroy_window(fdf->mlx_ptr, fdf->winmlx_ptr);
+		fdf->winmlx_ptr = NULL;
+	}
+	if(fdf->mlx_ptr)
+	{
+		mlx_destroy_display(fdf->mlx_ptr);
+		free(fdf->mlx_ptr);
+		fdf->mlx_ptr = NULL;
+	}
 	free(fdf);
 	fdf = NULL;
 	exit(0);
@@ -356,9 +311,6 @@ void set_z(fdf *fdf)
 		}
 		i++;
 	}
-	//fdf->max_z = fdf->max_z * fdf->z_scale;
-	//fdf->min_z = fdf->min_z * fdf->z_scale;
-	printf("max_z = %d min_z = %d\n", fdf->max_z, fdf->min_z);
 }
 int setup_map(fdf *fdf, char *file)
 {
@@ -367,7 +319,7 @@ int setup_map(fdf *fdf, char *file)
 	
 	if(!fdf || !fd)
 		return (1);
-	if(make_tab(fdf) || populate_map(fdf, file, fd))
+	if(1 || make_tab(fdf) || populate_map(fdf, file, fd))
 		clear_game(fdf);
 
 	close(fd);
@@ -426,7 +378,7 @@ void set_zoom(fdf *fdf)
     else if (total > 5000)
         fdf->zoom = 3;
     else if (total > 500)
-        fdf->zoom = 5;
+        fdf->zoom = 20;
     else
         fdf->zoom = 20;
 	
@@ -434,10 +386,78 @@ void set_zoom(fdf *fdf)
 	
 }
 
+void calculate_zoom_80_percent(fdf *fdf)
+{
+    float zoom_x;
+    float zoom_y;
+	
+	zoom_x = (fdf->win_x * 0.8f) / fdf->largeur;
+	zoom_y = (fdf->win_y * 0.8f) / fdf->hauter;
+    
+	if(zoom_x > zoom_y)
+		fdf->zoom = (int)(zoom_y);
+	else
+		fdf->zoom = (int)(zoom_x);
+
+    if (fdf->zoom < 2)
+        fdf->zoom = 2;
+    else if (fdf->zoom > 50)
+        fdf->zoom = 50; 
+    
+    // Adapter le z_scale en fonction de la plage de hauteurs
+    if (fdf->max_z != fdf->min_z) {
+        int height_range = fdf->max_z - fdf->min_z;
+        printf("Plage de hauteurs: %d\n", height_range);
+        // Adapter l'échelle Z en fonction de l'amplitude des hauteurs
+        if (height_range > 50)
+            fdf->z_scale = 0.1f;
+        else if (height_range > 20)
+            fdf->z_scale =  0.2f;
+        else if (height_range > 5)
+            fdf->z_scale = 0.3f;
+		else
+			fdf->z_scale =  0.6f;
+    } else {
+        fdf->z_scale = 1.0f;
+    }
+	printf("Zoom : %d\n ", fdf->zoom);
+    
+}
+
+void setup_struct(fdf *fdf)
+{
+	if(!fdf)
+		return;
+
+	memset(fdf->key, 0, sizeof(fdf->key));
+	int		hauter = 0;
+	int		largeur = 0;
+	int		zoom = 0;
+	double	z_angle = 0.0f;
+	double	x_angle = 0.0f;
+	double	y_angle = 0.0f;
+	int		offsx = 0;
+	int		offsy = 0;
+	int		max_z = 0;
+	int		min_z = 0;
+	double	z_scale = 0.0f;
+	int		couleur	= 0;
+	int		win_x = 0;
+	int		win_y = 0;
+	int		**map = NULL;
+	void	*mlx_ptr = NULL;
+	void	*winmlx_ptr = NULL;
+	void	*mlx_image = NULL;
+	char	*ptr_image = NULL;
+	int		bits_per_pixel = 0;
+	int		line_length = 0;
+	int		endian = 0;
+}
+
 int setup_fdf(fdf *fdf, char *file)
 {
 	
-	if(!fdf || verif_path(file))
+	if(!fdf || verif_path(file)) //ok si les  deux a 1 error
 		return (1);
     if(hauter(fdf,file) == -1 || largeur(fdf,file) == -1)
 		return (1);
@@ -449,15 +469,19 @@ int setup_fdf(fdf *fdf, char *file)
 	memset(fdf->key, 0, sizeof(fdf->key));
 		fdf->win_x = 800;
 		fdf->win_y = 600;
-		set_zoom(fdf);
+		//fdf->zoom = 20;
+		//set_zoom(fdf);
+		set_z(fdf);
+		calculate_zoom_80_percent(fdf);
+		//fdf->z_scale = 1.0f;
 		//fdf->zoom = 20;
 		fdf->x_angle = 0.0f;
 		fdf->y_angle = 0.0f;
-		fdf->z_angle = M_PI/6; //MP_PI 6 30
-		set_z(fdf);
+		fdf->z_angle = 0.0f; //MP_PI 6 30
+		//set_z(fdf);
 		//fdf->z_scale = 1.0f;
-		fdf->z_scale = (fdf->max_z - abs(fdf->min_z));
-		printf("z_scale = %d\n", fdf->z_scale);
+		//fdf->z_scale = fdf->zoom;
+		printf("z_scale = %f\n", fdf->z_scale);
 		//fdf->zoom = fdf->z_scale;
 		//fdf->z_scale = 1.0f;
 		//calculate_zoom(fdf);
@@ -465,8 +489,11 @@ int setup_fdf(fdf *fdf, char *file)
 		//fdf->offsx = (fdf->win_x / 2) * fdf->zoom; 
 		//fdf->offsy = (fdf->win_y / 2) * fdf->zoom;
 		//printf("Win x : %d Win y : %d \n", fdf->win_x /2, fdf->win_y/2);
-		fdf->offsx = ((fdf->win_x / 2) - ((fdf -> largeur * fdf->zoom) / 2));
-		fdf->offsy =  ((fdf->win_y / 2) - ((fdf -> hauter * fdf->zoom) / 2));
+		//fdf->offsx = ((fdf->win_x / 2) - ((fdf -> largeur * fdf->zoom) / 2));
+		//fdf->offsy =  ((fdf->win_y / 2) - ((fdf -> hauter * fdf->zoom) / 2));
+		fdf->offsx = 0;
+		fdf->offsy =  0;
+
 
 	
 	fdf->mlx_ptr = mlx_init();

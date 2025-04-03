@@ -6,7 +6,7 @@
 /*   By: vwautier <vwautier@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/10 13:44:35 by vwautier          #+#    #+#             */
-/*   Updated: 2025/04/01 20:38:20 by vwautier         ###   ########.fr       */
+/*   Updated: 2025/04/03 23:35:35 by vwautier         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -115,17 +115,17 @@ int main(int argc, char **argv)
     {
         if(setup_fdf(fdf, argv[1]))
         {
-            //clear_game(fdf);
-            free(fdf);
+            clear_game(fdf);
+            //free(fdf);
             exit(1);
         }
     }
     else
     {
-        write(2,"Error: number of arguments\n",28);
+        write(2,"Error : number of arguments\n",28);
         write(2,"Usage : ./fdf <filename>\n",25);
         free(fdf);
-        return (1);
+        exit (1);
     }
    /*
     if (!fdf)
@@ -157,7 +157,7 @@ int main(int argc, char **argv)
 	fdf->ptr_image = mlx_get_data_addr(fdf->mlx_image,&fdf->bits_per_pixel,&fdf->line_length,&fdf->endian);
     */
 
-    
+    //affichage(fdf);
     mlx_key_hook(fdf->winmlx_ptr,key_handler,fdf);
 	mlx_hook(fdf->winmlx_ptr, 17, 0,clear_game,fdf);
 	mlx_hook(fdf->winmlx_ptr, 17, 0,clear_game,fdf);

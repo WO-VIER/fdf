@@ -6,7 +6,7 @@
 /*   By: vwautier <vwautier@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/02 15:20:00 by vwautier          #+#    #+#             */
-/*   Updated: 2025/04/01 21:43:04 by vwautier         ###   ########.fr       */
+/*   Updated: 2025/04/03 23:04:27 by vwautier         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,11 +23,15 @@ void clear_image(fdf *fdf)
 
 void z_scale(int key, fdf *fdf)
 {
+
     if(key == 49)
-        fdf->z_scale = fdf->z_scale + 1;
+        fdf->z_scale = fdf->z_scale - 0.1;
     if(key == 50)
-        fdf->z_scale = fdf->z_scale - 1;
-    printf("z_scale = %d\n", fdf->z_scale);
+        fdf->z_scale = fdf->z_scale + 0.1;
+
+
+        printf("z_scale = %f\n", fdf->z_scale);
+
 }
 
 void zoom(int key, fdf *fdf)
@@ -35,16 +39,15 @@ void zoom(int key, fdf *fdf)
     if (key == 93 || key == 61)
     {
         fdf->zoom = fdf->zoom + 1;
-         z_scale(49, fdf);
     }
     if(key == 47 || key == 45)
     {
-        fdf->zoom = fdf-> zoom - 1;
-        z_scale(50, fdf);
+        if (fdf->zoom != 2)
+            fdf->zoom = fdf-> zoom - 1;
     }
 
         printf("zoom = %d\n", fdf->zoom);
-        printf("z_scale = %d\n", fdf->z_scale);
+        printf("z_scale = %f\n", fdf->z_scale);
 }
 
 int key_release(int key, fdf *fdf)
