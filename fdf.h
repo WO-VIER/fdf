@@ -6,7 +6,7 @@
 /*   By: vwautier <vwautier@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/23 14:41:36 by vwautier          #+#    #+#             */
-/*   Updated: 2025/04/03 23:49:04 by vwautier         ###   ########.fr       */
+/*   Updated: 2025/04/04 12:47:41 by vwautier         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,14 +32,14 @@ typedef struct s_fdf
 	int		hauter;
 	int		largeur;
 	int		zoom;
-	double	z_angle;
-	double	x_angle;
-	double	y_angle;
+	float	z_angle;
+	float	x_angle;
+	float	y_angle;
 	int		offsx;
 	int		offsy;
 	int		max_z;
 	int		min_z;
-	double	z_scale;
+	float	z_scale;
 	int		couleur;
 	int		win_x;
 	int		win_y;
@@ -49,11 +49,12 @@ typedef struct s_fdf
 	void	*mlx_image;
 	char	*ptr_image;
 	int		bits_per_pixel;
-	int		line_length;
+	int		line_length; 
 	int		endian;
 }			fdf;
 
 // Nouvelle fonction pour une projection isométrique standard de 42
+int setup_struct(fdf *fdf);
 void		isometric_projection_42(fdf *fdf, float *x, float *x1, float *y,
 				float *y1, int z, int z1);
 

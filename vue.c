@@ -6,7 +6,7 @@
 /*   By: vwautier <vwautier@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/01 16:56:38 by vwautier          #+#    #+#             */
-/*   Updated: 2025/04/03 22:18:04 by vwautier         ###   ########.fr       */
+/*   Updated: 2025/04/04 16:55:13 by vwautier         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,26 +24,6 @@ void bit_rotate(fdf *fdf, float *x, float *x1, float *y, float *y1, int z, int z
     *y1 = *y1 + fdf->offsy;
 }
 
-int get_color_for_height(fdf *fdf, float height)
-{
-    //return (0xffffff);
-    if (height == 0)
-        return 0xffffff;
-    
-    float ratio = (float)(height - fdf->min_z) / (fdf->max_z - fdf->min_z);
-    // Dégradé de jaune (#fffb51) à rose (#ff91ff)
-    int r = 255;
-    int g = 251 - (int)(ratio * (251 - 145));
-    int b = 81 + (int)(ratio * (255 - 81));
-    
-    return (r << 16) | (g << 8) | b;
-}
-
-// Fonction pour interpoler entre deux hauteurs
-float interpolate(float start, float end, float percentage)
-{
-    return start + ((end - start) * percentage);
-}
 
 static void rotate_x(fdf *fdf, float *x, float *y, float *z)
 {
@@ -81,7 +61,7 @@ static void rotate_point(fdf *fdf, float *x, float *y, float *z)
 
 void improved_isometric_projection(fdf *fdf, float *x, float *x1, float *y, float *y1, int z, int z1)
 {
-   float z_scaled = (z * (fdf->zoom * fdf->z_scale)); // z * fdf->z_scale
+    float z_scaled = (z * (fdf->zoom * fdf->z_scale)); // z * fdf->z_scale
     float z1_scaled = (z1 * (fdf->zoom * fdf->z_scale)); // z1 * fdf->z_scale
 
     //z *fdf->z_scale;
@@ -134,13 +114,86 @@ void	mlx_pixel_put_img(fdf *fdf, int x, int y, int color)
  	}
 }
 
+static void extract_rgb(int color, int *r, int *g, int *b)
+{
+    *r = (color >> 16) & 0xFF;
+    *g = (color >> 8) & 0xFF;
+    *b = color & 0xFF;
+}
+
+static float interpolate(float start, float end, float percentage)
+{
+    return start + (end - start) * percentage;
+}
+
+// Fonction pour créer une couleur à partir des composantes RGB
+static int create_rgb(int r, int g, int b)
+{
+    return (r << 16) | (g << 8) | b;
+}
+
+
+
+// Fonction pour interpoler une couleur entre deux couleurs
+static int interpolate_color(int color1, int color2, float percentage)
+{
+    int r1, g1, b1;
+    int r2, g2, b2;
+    int r, g, b;
+
+    extract_rgb(color1, &r1, &g1, &b1);
+    extract_rgb(color2, &r2, &g2, &b2);
+
+    r = r1 + (int)((r2 - r1) * percentage);
+    g = g1 + (int)((g2 - g1) * percentage);
+    b = b1 + (int)((b2 - b1) * percentage);
+
+    return create_rgb(r, g, b);
+}
+
+// Fonction pour obtenir la couleur correspondant à une hauteur
+int get_color_for_height(fdf *fdf, float height)
+{
+    float percentage;
+    int color_low = 0xEEAECA;  // Rose: rgb(238,174,202)
+    int color_high = 0x94BBE9; // Bleu: rgb(148,187,233)
+    
+    // Cas particulier: si min_z = max_z (carte plate)
+    if (fdf->min_z == fdf->max_z)
+        return color_low;
+    
+    // Calculer le pourcentage entre min_z et max_z
+    percentage = (height - fdf->min_z) / (float)(fdf->max_z - fdf->min_z);
+    
+    // S'assurer que le pourcentage est entre 0 et 1
+    if (percentage < 0)
+        percentage = 0;
+    if (percentage > 1)
+        percentage = 1;
+    
+    // Interpoler entre les deux couleurs
+    return interpolate_color(color_low, color_high, percentage);
+}
+
+
 void fdf_color(fdf *fdf, int z, int z1)
 {
+    // Utiliser le gradient pour les hauteurs non nulles
     if (z || z1)
-    	fdf->couleur = 0xe80c0c;
-	else
+        fdf->couleur = get_color_for_height(fdf, z > z1 ? z : z1);
+    else
+        fdf->couleur = 0xFFFFFF; // Blanc pour les hauteurs nulles
+}
+
+
+void fdf_color2(fdf *fdf, int z, int z1)
+{
+    if (z || z1)
+        fdf->couleur = get_color_for_height(fdf, z > z1 ? z : z1);
+    else
         fdf->couleur = 0xFFFFFF;
 }
+
 
 void isometric_projection(fdf *fdf, float *x, float *x1, float *y, float *y1, int z, int z1)
 {
@@ -167,6 +220,13 @@ void isometric_projection(fdf *fdf, float *x, float *x1, float *y, float *y1, in
     *y1 = (temp + *y1) * sin(M_PI / 6) - (z1 * (fdf->zoom * fdf->z_scale));
 }
 
+int max_dx_dy(int dx, int dy)
+{
+    if (dx > dy)
+        return dx;
+    return dy;
+}
+
 
 
 void bresenham(float x, float y, float x1, float y1, fdf *fdf)
@@ -180,39 +240,40 @@ void bresenham(float x, float y, float x1, float y1, fdf *fdf)
     z = fdf->map[(int)y][(int)x];
     z1 = fdf->map[(int)y1][(int)x1];
 
-    fdf_color(fdf, z, z1);
+    //fdf_color(fdf, z, z1);
 
     improved_isometric_projection(fdf, &x, &x1, &y, &y1, z, z1);
     //isometric_projection(fdf, &x, &x1, &y, &y1, z, z1);
     dx = x1 - x;
     dy = y1 - y;
-    max = (fabs(dx) > fabs(dy)) ? fabs(dx) : fabs(dy);
-
-    if (max == 0)
-        max = 1;
+   // max = (fabs(dx) > fabs(dy)) ? fabs(dx) : fabs(dy);
+    max = max_dx_dy(fabs(dx), fabs(dy));
+    //if (max == 0)
+        //max = 1;
 
     dx = dx / max;
     dy = dy / max;
 
     int i;
     i = 0;
+   //printf(); 
     while((int)(x - x1) || (int)(y - y1))
     {
-        //printf("x : %f y : %f\n", x, y);
-        //float percentage = (float)i / max;
-        //float current_height = interpolate(z, z1, percentage);
-        //int color = get_color_for_height(fdf, current_height);
+        float percentage = (float)i / max;
+        float current_height = interpolate(z, z1, percentage);
+        
+        // Obtenir la couleur pour la hauteur actuelle
+        int color = get_color_for_height(fdf, current_height);;
         if((int)x <= fdf->win_x || (int)y <= fdf->win_y)
         {
-			mlx_pixel_put_img(fdf, (int)x, (int)y, fdf->couleur);
+			mlx_pixel_put_img(fdf, (int)x, (int)y, color);
         }
 		x = x + dx;
 		y = y + dy;
-        /*
+        
         i++;
         if (i > max + 1)
             break;
-            */
     }
 }
 

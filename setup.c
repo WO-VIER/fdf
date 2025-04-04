@@ -6,7 +6,7 @@
 /*   By: vwautier <vwautier@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/23 16:58:59 by vwautier          #+#    #+#             */
-/*   Updated: 2025/04/03 23:47:58 by vwautier         ###   ########.fr       */
+/*   Updated: 2025/04/04 13:00:00 by vwautier         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -248,9 +248,7 @@ void clear_board(fdf *fdf)
 
 int clear_game(fdf *fdf)
 {
-	int i;
-	
-	if (!fdf)
+	if(!fdf)
 		return (1);
 	if(fdf->map)
 		clear_board(fdf);
@@ -272,7 +270,7 @@ int clear_game(fdf *fdf)
 	}
 	free(fdf);
 	fdf = NULL;
-	exit(0);
+	exit(1);
 }
 
 int verif_path(char *file)
@@ -317,13 +315,14 @@ int setup_map(fdf *fdf, char *file)
 	int fd;
 	fd = open(file, O_RDONLY);
 	
-	if(!fdf || !fd)
+	if(!fdf || fd == -1)
 		return (1);
-	if(1 || make_tab(fdf) || populate_map(fdf, file, fd))
-		clear_game(fdf);
-
+	if(make_tab(fdf) || populate_map(fdf, file, fd))
+	{
+		close(fd);
+		return (1);
+	}
 	close(fd);
-	print_tab(fdf);
 	return (0);
 
 }
@@ -388,70 +387,63 @@ void set_zoom(fdf *fdf)
 
 void calculate_zoom_80_percent(fdf *fdf)
 {
+	int range;
     float zoom_x;
     float zoom_y;
 	
 	zoom_x = (fdf->win_x * 0.8f) / fdf->largeur;
 	zoom_y = (fdf->win_y * 0.8f) / fdf->hauter;
-    
 	if(zoom_x > zoom_y)
 		fdf->zoom = (int)(zoom_y);
 	else
 		fdf->zoom = (int)(zoom_x);
-
     if (fdf->zoom < 2)
         fdf->zoom = 2;
     else if (fdf->zoom > 50)
         fdf->zoom = 50; 
-    
-    // Adapter le z_scale en fonction de la plage de hauteurs
-    if (fdf->max_z != fdf->min_z) {
-        int height_range = fdf->max_z - fdf->min_z;
-        printf("Plage de hauteurs: %d\n", height_range);
-        // Adapter l'échelle Z en fonction de l'amplitude des hauteurs
-        if (height_range > 50)
+	fdf->z_scale = 1.0f;
+    if (fdf->max_z != fdf->min_z) 
+	{
+        range = fdf->max_z - fdf->min_z;
+        if (range > 50)
             fdf->z_scale = 0.1f;
-        else if (height_range > 20)
+        else if (range > 20)
             fdf->z_scale =  0.2f;
-        else if (height_range > 5)
+        else if (range > 5)
             fdf->z_scale = 0.3f;
 		else
 			fdf->z_scale =  0.6f;
-    } else {
-        fdf->z_scale = 1.0f;
     }
-	printf("Zoom : %d\n ", fdf->zoom);
-    
+	printf("z-scale = %f Zoom = %d\n",fdf->z_scale, fdf->zoom);
 }
 
-void setup_struct(fdf *fdf)
+int setup_struct(fdf *fdf)
 {
-	if(!fdf)
-		return;
-
-	memset(fdf->key, 0, sizeof(fdf->key));
-	int		hauter = 0;
-	int		largeur = 0;
-	int		zoom = 0;
-	double	z_angle = 0.0f;
-	double	x_angle = 0.0f;
-	double	y_angle = 0.0f;
-	int		offsx = 0;
-	int		offsy = 0;
-	int		max_z = 0;
-	int		min_z = 0;
-	double	z_scale = 0.0f;
-	int		couleur	= 0;
-	int		win_x = 0;
-	int		win_y = 0;
-	int		**map = NULL;
-	void	*mlx_ptr = NULL;
-	void	*winmlx_ptr = NULL;
-	void	*mlx_image = NULL;
-	char	*ptr_image = NULL;
-	int		bits_per_pixel = 0;
-	int		line_length = 0;
-	int		endian = 0;
+	ft_memset(fdf->key, 0, sizeof(fdf->key));
+	fdf->hauter = 0;
+	fdf->largeur = 0;
+	fdf->zoom = 0;
+	fdf->z_angle = 0.0f;
+	fdf->x_angle = 0.0f;
+	fdf->y_angle = 0.0f;
+	fdf->offsx = 0;
+	fdf->offsy = 0;
+	fdf->max_z = 0;
+	fdf->min_z = 0;
+	fdf->z_scale = 0.0f;
+	fdf->couleur = 0;
+	fdf->win_x = 800;
+	fdf->win_y = 600;
+	fdf->map = NULL;
+	fdf->mlx_ptr = NULL;
+	fdf->winmlx_ptr = NULL;
+	fdf->mlx_image = NULL;
+	fdf->ptr_image = NULL;
+	fdf->bits_per_pixel = 0;
+	fdf->line_length = 0;
+	fdf->endian = 0;
+	
+	return (0);
 }
 
 int setup_fdf(fdf *fdf, char *file)
@@ -459,58 +451,22 @@ int setup_fdf(fdf *fdf, char *file)
 	
 	if(!fdf || verif_path(file)) //ok si les  deux a 1 error
 		return (1);
-    if(hauter(fdf,file) == -1 || largeur(fdf,file) == -1)
+    if(hauter(fdf,file) == -1 || largeur(fdf,file) == -1 || setup_map(fdf,file) == 1)
 		return (1);
 	printf("hauter = %d largeur = %d\n", fdf->hauter, fdf->largeur);
-    if(setup_map(fdf, file))
-		return (1);
-	//set_z(fdf);
-
-	memset(fdf->key, 0, sizeof(fdf->key));
-		fdf->win_x = 800;
-		fdf->win_y = 600;
-		//fdf->zoom = 20;
-		//set_zoom(fdf);
-		set_z(fdf);
-		calculate_zoom_80_percent(fdf);
-		//fdf->z_scale = 1.0f;
-		//fdf->zoom = 20;
-		fdf->x_angle = 0.0f;
-		fdf->y_angle = 0.0f;
-		fdf->z_angle = 0.0f; //MP_PI 6 30
-		//set_z(fdf);
-		//fdf->z_scale = 1.0f;
-		//fdf->z_scale = fdf->zoom;
-		printf("z_scale = %f\n", fdf->z_scale);
-		//fdf->zoom = fdf->z_scale;
-		//fdf->z_scale = 1.0f;
-		//calculate_zoom(fdf);
-		//fdf->z = 0;
-		//fdf->offsx = (fdf->win_x / 2) * fdf->zoom; 
-		//fdf->offsy = (fdf->win_y / 2) * fdf->zoom;
-		//printf("Win x : %d Win y : %d \n", fdf->win_x /2, fdf->win_y/2);
-		//fdf->offsx = ((fdf->win_x / 2) - ((fdf -> largeur * fdf->zoom) / 2));
-		//fdf->offsy =  ((fdf->win_y / 2) - ((fdf -> hauter * fdf->zoom) / 2));
-		fdf->offsx = 0;
-		fdf->offsy =  0;
-
-
-	
+	set_z(fdf);
+	calculate_zoom_80_percent(fdf);
 	fdf->mlx_ptr = mlx_init();
 	if(!fdf->mlx_ptr)
 		return (1);
     fdf->winmlx_ptr = mlx_new_window(fdf->mlx_ptr,fdf->win_x,fdf->win_y,"FDF");
 	if(!fdf->winmlx_ptr)
 		return (1);
-
     fdf->mlx_image = mlx_new_image(fdf->mlx_ptr, fdf->win_x, fdf->win_y);
 	if (!fdf->mlx_image)
 		return (1);
-	
-	//fdf->bits_per_pixel = 32;
-	fdf->ptr_image = mlx_get_data_addr(fdf->mlx_image,&fdf->bits_per_pixel,&fdf->line_length,&fdf->endian);
+	fdf->ptr_image = mlx_get_data_addr(fdf->mlx_image,&fdf->bits_per_pixel,&fdf->line_length,&fdf->endian);//Fill automatiquement win_x * 4 (32 bits) = line_length 
 	if(!fdf->ptr_image)
 		return (1);
-	
 	return (0);
 }
