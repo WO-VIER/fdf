@@ -6,7 +6,7 @@
 #    By: vwautier <vwautier@student.s19.be>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/03/29 17:29:51 by vwautier          #+#    #+#              #
-#    Updated: 2025/04/04 00:25:52 by vwautier         ###   ########.fr        #
+#    Updated: 2025/04/05 16:21:40 by vwautier         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -17,7 +17,7 @@ CC = cc
 CFLAGS = -g # -Wall -Wextra -Werror
 
 # Sources - modifié pour éviter les doublons de main
-SRCS = fdf.c vue.c setup.c control.c
+SRCS = fdf.c rotate.c util_vue.c vue.c setup.c control.c board.c board_util.c board_free.c
 OBJS = $(SRCS:.c=.o)
 
 # Dossiers des bibliothèques

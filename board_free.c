@@ -1,40 +1,52 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   fdf.c                                              :+:      :+:    :+:   */
+/*   board_free.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vwautier <vwautier@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/12/10 13:44:35 by vwautier          #+#    #+#             */
-/*   Updated: 2025/04/05 16:36:20 by vwautier         ###   ########.fr       */
+/*   Created: 2025/04/05 16:04:28 by vwautier          #+#    #+#             */
+/*   Updated: 2025/04/05 17:29:22 by vwautier         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "fdf.h"
 
-int	main(int argc, char **argv)
+int	free_split(char **split, char *line)
 {
-	t_fdf	*fdf;
+	int	i;
 
-	fdf = malloc(sizeof(*fdf));
-	if (!fdf)
-		exit(1);
-	setup_struct(fdf);
-	if (argc == 2)
+	if (!split)
+		return (1);
+	i = 0;
+	while (split[i])
 	{
-		if (setup_fdf(fdf, argv[1]))
-			clear_game(fdf);
+		free(split[i]);
+		split[i] = NULL;
+		i++;
 	}
-	else
+	free(split);
+	split = NULL;
+	if (line)
 	{
-		write(2, "Error : number of arguments\n", 28);
-		write(2, "Usage : ./fdf <filename>\n", 25);
-		free(fdf);
-		exit(1);
+		free(line);
+		line = NULL;
 	}
-	mlx_key_hook(fdf->winmlx_ptr, key_handler, fdf);
-	mlx_hook(fdf->winmlx_ptr, 17, 0, clear_game, fdf);
-	affichage(fdf);
-	mlx_loop(fdf->mlx_ptr);
 	return (0);
+}
+
+void	clear_board(t_fdf *fdf)
+{
+	int	i;
+
+	i = 0;
+	if (!fdf)
+		return ;
+	while (fdf->map && i < fdf->hauter)
+	{
+		free(fdf->map[i]);
+		fdf->map[i++] = NULL;
+	}
+	free(fdf->map);
+	fdf->map = NULL;
 }

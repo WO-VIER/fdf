@@ -6,7 +6,7 @@
 /*   By: vwautier <vwautier@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/23 14:41:36 by vwautier          #+#    #+#             */
-/*   Updated: 2025/04/04 12:47:41 by vwautier         ###   ########.fr       */
+/*   Updated: 2025/04/05 17:31:52 by vwautier         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,9 +26,14 @@
 #  define M_PI 3.14159265358979323846
 # endif
 
+typedef struct s_point
+{
+	float	x;
+	float	y;
+}			t_point;
+
 typedef struct s_fdf
 {
-	int		key[256];
 	int		hauter;
 	int		largeur;
 	int		zoom;
@@ -49,41 +54,48 @@ typedef struct s_fdf
 	void	*mlx_image;
 	char	*ptr_image;
 	int		bits_per_pixel;
-	int		line_length; 
+	int		line_length;
 	int		endian;
-}			fdf;
+}			t_fdf;
+
+//rotate.c
+void		rotate_x(t_fdf *fdf, float *x, float *y, float *z);
+void		rotate_y(t_fdf *fdf, float *x, float *y, float *z);
+void		rotate_z(t_fdf *fdf, float *x, float *y, float *z);
+void		rotate_point(t_fdf *fdf, float *x, float *y, float *z);
+void		classic_isometric(float *x, float *y, float z);
+
+//vue.c
+//static void     improved_isometric_projection(fdf *fdf, float *x, float *y,
+//static void	mlx_pixel_put_img(fdf *fdf, int x, int y, int color);
+int			affichage(t_fdf *fdf);
+
+//static void	draw_line(t_point p, t_point p1, fdf *fdf);
+
+//util_vue.c
+void		clear_image(t_fdf *fdf);
+int			max_dx_dy(float dx, float dy);
+void		fdf_color(t_fdf *fdf, int z, int z1);
+
+//board_util.c
+int			largeur(t_fdf *fdf, char *file);
+int			hauter(t_fdf *fdf, char *file);
+void		set_z(t_fdf *fdf);
+
+//board_free.c
+int			free_split(char **split, char *line);
+void		clear_board(t_fdf *fdf);
+//board.c
+int			setup_map(t_fdf *fdf, char *file);
+
+//control.c
+int			key_handler(int key, t_fdf *fdf);
+
+//setup.c
+int			clear_game(t_fdf *fdf);
+int			setup_struct(t_fdf *fdf);
+int			setup_fdf(t_fdf *fdf, char *file);
 
 // Nouvelle fonction pour une projection isométrique standard de 42
-int setup_struct(fdf *fdf);
-void		isometric_projection_42(fdf *fdf, float *x, float *x1, float *y,
-				float *y1, int z, int z1);
-
-void		iso_normal(fdf *fdf, float *x, float *x1, float *y, float *y1,
-				int z, int z1);
-void		draw_center_cross(fdf *fdf);
-void		isometric_projection2(fdf *fdf, float *x, float *x1, float *y,
-				float *y1, int z, int z1);
-void		print_tab(fdf *fdf);
-int			verif_path(char *file);
-int			free_split(char **spli, char *line);
-int			key_release(int key, fdf *fdf);
-int			loop_handler(fdf *fdf);
-void		z_scale(int key, fdf *fdf);
-int			hauter(fdf *fdf, char *file);
-int			largeur(fdf *fdf, char *file);
-int			setup_map(fdf *fdf, char *file);
-int			setup_fdf(fdf *fdf, char *file);
-void		test_fdf(fdf *fdf);
-void		bresenham(float x, float y, float x1, float y1, fdf *fdf);
-void		bresenham2(int x, int y, int x1, int y1, fdf *fdf);
-void		isometric_projection(fdf *fdf, float *x, float *x1, float *y,
-				float *y1, int z, int z1);
-
-int			affichage(fdf *fdf);
-int			key_handler(int key, fdf *fdf);
-int			clear_game(fdf *fdf);
-void		no_projection(fdf *fdf, float *x, float *x1, float *y, float *y1);
-void		fdf_color(fdf *fdf, int z, int z1);
-void		mlx_pixel_put_img(fdf *fdf, int x, int y, int color);
 
 #endif
