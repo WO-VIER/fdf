@@ -1,0 +1,1 @@
+gcc -g -fsanitize=address -o fdf fdf.c setup.c vue.c control.c minilibx-linux/libmlx_Linux.a gnl/gnl.a libft/libft.a -lX11 -lXext -lm
